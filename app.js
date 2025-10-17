@@ -12,7 +12,9 @@ const app = express();
 // Middleware is a function that can modify incomming request data.
 // This middleware will be called for every request that comes into the server, because their logic precedes the route handlers.
 // 'next' is a naming convention for calling the next middleware in line.
-app.use(morgan('dev'));
+if (process.env.NODE_ENV === 'development') {
+  app.use(morgan('dev'));
+}
 
 app.use(express.json());
 

@@ -1,7 +1,7 @@
 const fs = require('fs');
 
 const tours = JSON.parse(
-  fs.readFileSync(`${__dirname}/../dev-data/data/tours-simple.json`)
+  fs.readFileSync(`${__dirname}/../dev-data/data/tours-simple.json`),
 );
 
 const checkID = (req, res, next, val) => {
@@ -59,19 +59,19 @@ const getTour = (req, res) => {
 };
 
 const createTour = (req, res) => {
-  // console.log(req.body);
+  console.log(req.body);
   const newId = tours[tours.length - 1].id + 1;
   // Object.assign() merges two objects. Here we create a new object
   // that has the new id and all the data that was sent in the request body
   // req.body is where express puts all the body data
-  const newTour = Object.assign({ id: newId }, req.body);
+  const newTour = Object.assign({ id: newId }, ...req.body);
   // add the new tour to the tours array
   tours.push(newTour);
 
   fs.writeFile(
     `${__dirname}/dev-data/data/tours-simple.json`,
     JSON.stringify(tours),
-    (err) => {
+    () => {
       // 201: created
       res.status(201).json({
         status: 'success',
@@ -79,7 +79,7 @@ const createTour = (req, res) => {
           tour: newTour,
         },
       });
-    }
+    },
   );
 };
 
@@ -96,14 +96,14 @@ const updateTour = (req, res) => {
   fs.writeFile(
     `${__dirname}/dev-data/data/tours-simple.json`,
     JSON.stringify(tours),
-    (err) => {
+    () => {
       res.status(200).json({
         status: 'success',
         data: {
           tour,
         },
       });
-    }
+    },
   );
 };
 
