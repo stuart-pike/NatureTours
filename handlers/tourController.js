@@ -1,8 +1,10 @@
 const fs = require('fs');
+const Tour = require('../models/tourModel');
 
-const tours = JSON.parse(
-  fs.readFileSync(`${__dirname}/../dev-data/data/tours-simple.json`),
-);
+// Read tours data from JSON file for testing purposes
+// const tours = JSON.parse(
+//   fs.readFileSync(`${__dirname}/../dev-data/data/tours-simple.json`),
+// );
 
 const checkID = (req, res, next, val) => {
   console.log(`Tour id is: ${val}`);
@@ -33,10 +35,10 @@ const getAllTours = (req, res) => {
     .json({
       status: 'success',
       timeRequested: req.requestTime,
-      results: tours.length, // this is not part of JSend spec. but useful
-      data: {
-        tours,
-      },
+      // results: tours.length, // this is not part of JSend spec. but useful
+      // data: {
+      //   tours,
+      // },
     });
 };
 
@@ -45,20 +47,27 @@ const getTour = (req, res) => {
   console.log(req.params);
 
   // + converts string to number
-  const tour = tours.find((el) => el.id === +req.params.id);
+  // const tour = tours.find((el) => el.id === +req.params.id);
 
-  res
-    .status(200)
-    // reformat response using the JSend data specification
-    .json({
-      status: 'successs',
-      data: {
-        tour,
-      },
-    });
+  // res
+  //   .status(200)
+  //   // reformat response using the JSend data specification
+  //   .json({
+  //     status: 'successs',
+  //     data: {
+  //       tour,
+  //     },
+  //   });
 };
 
 const createTour = (req, res) => {
+  res.status(201).json({
+    status: 'success',
+    // data: {
+    //   tour: newTour,
+    // },
+  });
+  /*
   console.log(req.body);
   const newId = tours[tours.length - 1].id + 1;
   // Object.assign() merges two objects. Here we create a new object
@@ -81,6 +90,7 @@ const createTour = (req, res) => {
       });
     },
   );
+  */
 };
 
 const updateTour = (req, res) => {
