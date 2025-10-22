@@ -1,128 +1,148 @@
-const fs = require('fs');
+const mongoose = require('mongoose');
+
 const Tour = require('../models/tourModel');
 
-// Read tours data from JSON file for testing purposes
-// const tours = JSON.parse(
-//   fs.readFileSync(`${__dirname}/../dev-data/data/tours-simple.json`),
-// );
-
-const checkID = (req, res, next, val) => {
-  console.log(`Tour id is: ${val}`);
-  if (req.params.id * 1 > tours.length) {
-    return res.status(404).json({
-      status: 'fail',
-      message: 'Invalid ID',
-    });
-  }
-  next();
-};
-
-const checkBody = (req, res, next) => {
-  if (!req.body.name || !req.body.price) {
-    return res.status(400).json({
-      status: 'fail',
-      message: 'Missing name or price',
-    });
-  }
-  next();
-};
-
-const getAllTours = (req, res) => {
-  console.log(req.requestTime);
-  res
-    .status(200)
-    // reformat response using the JSend data specification
-    .json({
+const getAllTours = async (req, res) => {
+  try {
+    const tours = await Tour.find();
+    res.status(200).json({
       status: 'success',
-      timeRequested: req.requestTime,
-      // results: tours.length, // this is not part of JSend spec. but useful
-      // data: {
-      //   tours,
-      // },
+      results: tours.length,
+      data: {
+        tours,
+      },
     });
+  } catch (err) {
+    res.status(404).json({
+      status: 'error',
+      message: err.message,
+    });
+  }
 };
 
-const getTour = (req, res) => {
-  // req.params is where express puts all the url parameters
-  console.log(req.params);
+const getTour = async (req, res) => {
+  try {
+    const { id } = req.params;
 
-  // + converts string to number
-  // const tour = tours.find((el) => el.id === +req.params.id);
-
-  // res
-  //   .status(200)
-  //   // reformat response using the JSend data specification
-  //   .json({
-  //     status: 'successs',
-  //     data: {
-  //       tour,
-  //     },
-  //   });
-};
-
-const createTour = (req, res) => {
-  res.status(201).json({
-    status: 'success',
-    // data: {
-    //   tour: newTour,
-    // },
-  });
-  /*
-  console.log(req.body);
-  const newId = tours[tours.length - 1].id + 1;
-  // Object.assign() merges two objects. Here we create a new object
-  // that has the new id and all the data that was sent in the request body
-  // req.body is where express puts all the body data
-  const newTour = Object.assign({ id: newId }, ...req.body);
-  // add the new tour to the tours array
-  tours.push(newTour);
-
-  fs.writeFile(
-    `${__dirname}/dev-data/data/tours-simple.json`,
-    JSON.stringify(tours),
-    () => {
-      // 201: created
-      res.status(201).json({
-        status: 'success',
-        data: {
-          tour: newTour,
-        },
+    // Validate MongoDB ObjectId before querying
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Invalid tour ID format',
       });
-    },
-  );
-  */
-};
+    }
 
-const updateTour = (req, res) => {
-  // req.params is where express puts all the url parameters
-  console.log(req.params);
+    // Find tour by ID
+    const tour = await Tour.findById(id);
 
-  // + converts string to number
-  const tour = tours.find((el) => el.id === +req.params.id);
-
-  // Update the tour
-  Object.assign(tour, req.body);
-
-  fs.writeFile(
-    `${__dirname}/dev-data/data/tours-simple.json`,
-    JSON.stringify(tours),
-    () => {
-      res.status(200).json({
-        status: 'success',
-        data: {
-          tour,
-        },
+    if (!tour) {
+      return res.status(404).json({
+        status: 'fail',
+        message: 'No tour found with that ID',
       });
-    },
-  );
+    }
+    res.status(200).json({
+      status: 'success',
+      data: { tour },
+    });
+  } catch (err) {
+    console.error('Error fetching tour:', err); // Helpful for debugging
+    res.status(500).json({
+      status: 'error',
+      message: 'Something went wrong while retrieving the tour',
+      error: err.message,
+    });
+  }
 };
 
-const deleteTour = (req, res) => {
-  // 204 no content to send back
-  res.status(204).json({
-    status: 'success',
-    data: null,
-  });
+const createTour = async (req, res) => {
+  try {
+    const newTour = await Tour.create(req.body);
+    res.status(201).json({
+      status: 'success',
+      data: { tour: newTour },
+    });
+  } catch (err) {
+    res.status(err.name === 'ValidationError' ? 400 : 500).json({
+      status: 'fail',
+      message: err.message,
+    });
+  }
+};
+
+const updateTour = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Validate MongoDB ObjectId before querying
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Invalid tour ID format',
+      });
+    }
+
+    // Find tour by ID and update
+    const tour = await Tour.findByIdAndUpdate(id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!tour) {
+      return res.status(404).json({
+        status: 'fail',
+        message: 'No tour found with that ID',
+      });
+    }
+
+    res.status(200).json({
+      status: 'success',
+      data: { tour },
+    });
+  } catch (err) {
+    console.error('Error updating tour:', err);
+    res.status(500).json({
+      status: 'error',
+      message: 'Something went wrong while updating the tour',
+      error: err.message,
+    });
+  }
+};
+
+const deleteTour = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Validate MongoDB ObjectId before querying
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Invalid tour ID format',
+      });
+    }
+
+    // Find tour by ID and delete
+    const tour = await Tour.findByIdAndDelete(id);
+
+    if (!tour) {
+      return res.status(404).json({
+        status: 'fail',
+        message: 'No tour found with that ID',
+      });
+    }
+
+    res.status(204).json({
+      status: 'success',
+      data: null,
+    });
+  } catch (err) {
+    console.error('Error deleting tour:', err);
+    res.status(500).json({
+      status: 'error',
+      message: 'Something went wrong while deleting the tour',
+      error: err.message,
+    });
+  }
 };
 
 module.exports = {
@@ -131,6 +151,4 @@ module.exports = {
   createTour,
   updateTour,
   deleteTour,
-  checkID,
-  checkBody,
 };
