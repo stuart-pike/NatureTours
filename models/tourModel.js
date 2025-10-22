@@ -41,6 +41,16 @@ const tourSchema = new mongoose.Schema({
     type: Number,
     required: [true, 'A tour must have a price'],
   },
+  priceDiscount: {
+    type: Number,
+    validate: {
+      validator: function (val) {
+        // Custom validator to check that discount price is less than regular price
+        return val < this.price;
+      },
+      message: 'Discount price ({VALUE}) must be less than regular price',
+    },
+  },
   summary: {
     type: String,
     trim: true,
@@ -66,18 +76,3 @@ const tourSchema = new mongoose.Schema({
 const Tour = mongoose.model('Tour', tourSchema);
 
 module.exports = Tour;
-
-// Example of creating and saving a new tour
-// const testTour = new Tour({
-//   name: 'The Park Camper',
-//   price: 997,
-// });
-
-// testTour
-//   .save()
-//   .then((doc) => {
-//     console.log('✅ New tour created:', doc);
-//   })
-//   .catch((err) => {
-//     console.error('❌ Error creating tour:', err);
-//   });
