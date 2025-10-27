@@ -1,6 +1,5 @@
-const mongoose = require('mongoose');
-
 const Tour = require('../models/tourModel');
+const APIFeatures = require('../utils/apiFeatures');
 
 const aliasTopTours = (req, res, next) => {
   req.query.limit = '5';
@@ -11,57 +10,9 @@ const aliasTopTours = (req, res, next) => {
 
 const getAllTours = async (req, res) => {
   try {
-    // Build query
-    // eslint-disable-next-line node/no-unsupported-features/es-syntax
-    const queryObj = { ...req.query };
-    const excludedFields = ['page', 'sort', 'limit', 'fields'];
-    excludedFields.forEach((el) => delete queryObj[el]);
-
-    // Advanced filtering (e.g., gte, gt, lte, lt)
-    let queryStr = JSON.stringify(queryObj);
-    queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
-    const parsedQuery = JSON.parse(queryStr);
-    // .find returns a Query object that we can further chain methods onto
-    let query = Tour.find(parsedQuery);
-
-    // Sorting
-    if (req.query.sort) {
-      // mongoose expects space separated fields
-      const sortBy = req.query.sort.split(',').join(' ');
-      query = query.sort(sortBy);
-    } else {
-      query = query.sort('-createdAt');
-    }
-
-    // Field limiting
-    if (req.query.fields) {
-      // mongoose expects space separated fields, the same as sorting. The operation of selecting specific fields is called "projection".
-      const fields = req.query.fields.split(',').join(' ');
-      query = query.select(fields);
-    } else {
-      // -__v is a version key added by mongoose to track document revisions internally
-      query = query.select('-__v');
-    }
-
-    // pagination
-    // page=2&limit=10  => skip 10 results, limit to 10 results
-    const page = req.query.page * 1 || 1; // default to page 1
-    const limit = req.query.limit * 1 || 100; // default to 100 results per page
-    const skip = (page - 1) * limit;
-    query = query.skip(skip).limit(limit);
-
-    // trow error if page requested is out of range
-    if (req.query.page) {
-      const numTours = await Tour.countDocuments();
-      if (skip >= numTours) {
-        throw new Error('This page does not exist');
-      }
-    }
-
-    // Execute query
-    const tours = await query;
-
-    //console.log(req.query, queryObj); // For debugging purposes
+    const features = new APIFeatures(Tour.find(), req.query);
+    features.filter().sort().limitFields().paginate();
+    const tours = await features.query;
 
     // Send response
     res.status(200).json({
