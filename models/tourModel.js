@@ -65,7 +65,7 @@ const tourSchema = new mongoose.Schema({
     required: [true, 'A tour must have a cover image'],
   },
   images: [String],
-  startDates: [String], // You could convert these to Date objects later if you clean your data
+  startDates: [Date], // You could convert these to Date objects later if you clean your data
   createdAt: {
     type: Date,
     default: Date.now(),
