@@ -1,4 +1,5 @@
 {
   "singleQuote": true,
-  "columnWidth": 80
+  "trailingComma": "all",
+  "semi": true
 }
