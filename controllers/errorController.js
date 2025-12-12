@@ -35,6 +35,11 @@ const handleValidationErrorDB = (err) => {
   return new AppError(message, 400);
 };
 
+const handleJWTError = () =>
+  new AppError('Invalid token. Please log in again!', 401);
+const handleJWTExpiredError = () =>
+  new AppError('Your token has expired! Please log in again.', 401);
+
 /**
  * Send detailed error in development:
  * Includes full error object + stack trace for debugging.
@@ -63,7 +68,7 @@ const sendErrorProd = (err, res) => {
   }
 
   // Programming or unknown error → log it, but hide details from client
-  console.error('ERROR 💥', err);
+  console.error('💥 UNKOWN ERROR 💥', err);
 
   return res.status(500).json({
     status: 'error',
@@ -95,13 +100,16 @@ module.exports = (err, req, res, next) => {
    */
   if (process.env.NODE_ENV === 'production') {
     // Correct way to copy the error object without losing important properties
-    let error = Object.assign(...err);
+    let error = Object.create(err);
     error.message = err.message; // Required because message is not enumerable
 
     // Mongoose/MongoDB specific errors
-    if (err.name === 'CastError') error = handleCastErrorDB(error);
-    if (err.code === 11000) error = handleDuplicateFieldsDB(error);
-    if (err.name === 'ValidationError') error = handleValidationErrorDB(error);
+    if (error.name === 'CastError') error = handleCastErrorDB(error);
+    if (error.code === 11000) error = handleDuplicateFieldsDB(error);
+    if (error.name === 'ValidationError')
+      error = handleValidationErrorDB(error);
+    if (error.name === 'JsonWebTokenError') error = handleJWTError();
+    if (error.name === 'TokenExpiredError') error = handleJWTExpiredError();
 
     return sendErrorProd(error, res);
   }

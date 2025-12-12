@@ -39,6 +39,7 @@ coverage/
 .env.development.local
 .env.test.local
 .env.production.local
+config.env
 
 # OS files
 .DS_Store
