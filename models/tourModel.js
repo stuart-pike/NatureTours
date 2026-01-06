@@ -1,13 +1,13 @@
 const mongoose = require('mongoose');
 const slugify = require('slugify');
-//const validator = require('validator');
+//const User = require('./userModel');
 
 const tourSchema = new mongoose.Schema(
   {
     name: {
       type: String,
       required: [true, 'A tour must have a name'],
-      unique: true,
+      unique: true, // MongoDB will auto create index
       trim: true,
       maxlength: [40, 'A tour name must have less or equal than 40 characters'],
       minlength: [5, 'A tour name must have more or equal than 5 characters'],
@@ -79,6 +79,33 @@ const tourSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    // Object to spec geospacial data in MongoDB
+    startLocation: {
+      type: {
+        type: String,
+        default: 'Point',
+        enum: ['Point'],
+      },
+      coordinates: [Number],
+      address: String,
+      description: String,
+    },
+    locations: [
+      {
+        type: {
+          type: String,
+          default: 'Point',
+          enum: ['Point'],
+        },
+        coordinates: [Number],
+        address: String,
+        description: String,
+        day: Number,
+      },
+    ],
+    // guides: Array, // Embedding guides
+    // Create reference to another model
+    guides: [{ type: mongoose.Schema.ObjectId, ref: 'User' }],
   },
   {
     toJSON: { virtuals: true },
@@ -86,8 +113,23 @@ const tourSchema = new mongoose.Schema(
   },
 );
 
+// Improve DB read performace using indexes
+// sorting price in assending order ratingsAve in decenfing order.
+// Chose indexes that make the most sense.
+tourSchema.index({ price: 1, ratingsAverage: -1 });
+tourSchema.index({ slug: 1 });
+// Start location indexed to a 2D sphere
+tourSchema.index({ startLocation: '2dsphere' });
+
 tourSchema.virtual('durationWeeks').get(function () {
   return this.duration / 7;
+});
+
+// virtual populate
+tourSchema.virtual('reviews', {
+  ref: 'Review', // name of the model to reference
+  foreignField: 'tour', // spec the name used in the Review model
+  localField: '_id', // spec name used in the local (tour) model
 });
 
 // Document Middleware: runs before .save() and .create() commands only
@@ -95,6 +137,13 @@ tourSchema.pre('save', function (next) {
   this.slug = slugify(this.name, { lower: true });
   next();
 });
+
+// EMBEDDING tour guides into a new tour document in db
+// tourSchema.pre('save', async function (next) {
+//   const guidesPromises = this.guides.map(async (id) => await User.findById(id));
+//   this.guides = await Promise.all(guidesPromises);
+//   next();
+// });
 
 // tourSchema.pre('save', function (next) {
 //   console.log('💾 Will save document...');
@@ -106,12 +155,25 @@ tourSchema.pre('save', function (next) {
 //   next();
 // });
 
-// Query Middleware: runs before .find() and .findOne() commands only
+// Run this middleware BEFORE any Mongoose method whose name starts with find.
 // Query middleware to exclude secret tours from any find query
 // tourSchema.pre('find', function (next) {
 tourSchema.pre(/^find/, function (next) {
   this.find({ secretTour: { $ne: true } });
   this.start = Date.now();
+
+  next();
+});
+
+// populate the tours with the guides.
+// works like an additional query, thus population is expensive.
+tourSchema.pre(/^find/, function (next) {
+  // 'this' is the query object, not the document.
+  this.populate({
+    path: 'guides',
+    select: '-__v -passwordChangedAt',
+  });
+
   next();
 });
 
@@ -121,12 +183,16 @@ tourSchema.post(/^find/, function (docs, next) {
   next();
 });
 
+/*
 // Aggregation Middleware: runs before .aggregate() commands only
 tourSchema.pre('aggregate', function (next) {
   // Exclude secret tours from aggregation results
   this.pipeline().unshift({ $match: { secretTour: { $ne: true } } });
+
+  console.log(this.pipeline());
   next();
 });
+*/
 
 const Tour = mongoose.model('Tour', tourSchema);
 

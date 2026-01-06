@@ -1,8 +1,16 @@
 const express = require('express');
 const tourController = require('../controllers/tourController');
 const authController = require('../controllers/authController');
+const reviewRouter = require('./reviewRoutes');
 
 const router = express.Router();
+
+// POST /tour/tour_id/review
+// GET /tour/tour_id/reviews
+
+// for this specific route use the reviewRouter instead.
+// review router needs access to tourId
+router.use('/:tourId/reviews', reviewRouter);
 
 // middleware that runs for any route with the 'id' parameter in it;
 // router.param('id', tourController.checkID);
@@ -12,25 +20,42 @@ router
   .get(tourController.aliasTopTours, tourController.getAllTours);
 
 router.route('/tour-stats').get(tourController.getToursStats);
-router.route('/monthly-plan/:year').get(tourController.getMonthlyPlan);
+router
+  .route('/monthly-plan/:year')
+  .get(
+    authController.protect,
+    authController.restrictTo('admin', 'lead-guide', 'guide'),
+    tourController.getMonthlyPlan,
+  );
+
+// Geospacial queries
+router
+  .route('/tours-within/:distance/center/:latlng/unit/:unit')
+  .get(tourController.getToursWithin);
+
+router.route('/distances/:latlng/unit/:unit').get(tourController.getDistances);
 
 router
   .route('/')
-  // put a check in place to allow only authenticated users to access this route
-  // to achieve this, use a middleware func. from authController.js
-  // middleware will run before the getAllTours controller func. and return
-  // an error if user is not authenticated
-  .get(authController.protect, tourController.getAllTours)
-  .post(tourController.createTour);
+  // Expose the tours API for other sites to embed
+  .get(/*authController.protect,*/ tourController.getAllTours)
+  // POST, PATCH and DELETE restricted to ('admin', 'lead-guide')
+  .post(
+    authController.protect,
+    authController.restrictTo('admin', 'lead-guide'),
+    tourController.createTour,
+  );
 
 router
   .route('/:id')
   .get(tourController.getTour)
-  .patch(tourController.updateTour)
-  // validate user is authenticated and has appropriate role before allowing delete
+  .patch(
+    authController.protect,
+    authController.restrictTo('admin', 'lead-guide'),
+    tourController.updateTour,
+  )
   .delete(
     authController.protect,
-    //pass in roles that are allowed to delete tours
     authController.restrictTo('admin', 'lead-guide'),
     tourController.deleteTour,
   );

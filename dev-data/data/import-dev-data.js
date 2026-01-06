@@ -1,10 +1,12 @@
-// Create a script to import JSON data into the database
+// Script to import JSON data into the database
 // or delete all data from the database
 
 const fs = require('fs');
 const dotenv = require('dotenv');
 const mongoose = require('mongoose');
 const Tour = require('../../models/tourModel');
+const User = require('../../models/userModel');
+const Review = require('../../models/reviewModel');
 
 dotenv.config({ path: './config.env', override: true });
 
@@ -19,8 +21,10 @@ mongoose
   .catch((err) => console.error('❌ DB connection error:', err));
 
 // Read JSON file
-let tours = JSON.parse(
-  fs.readFileSync(`${__dirname}/tours-simple.json`, 'utf-8'),
+const tours = JSON.parse(fs.readFileSync(`${__dirname}/tours.json`, 'utf-8'));
+const users = JSON.parse(fs.readFileSync(`${__dirname}/users.json`, 'utf-8'));
+const reviews = JSON.parse(
+  fs.readFileSync(`${__dirname}/reviews.json`, 'utf-8'),
 );
 
 // 🧠 Convert startDates from strings → real Date objects
@@ -41,6 +45,8 @@ let tours = JSON.parse(
 const importData = async () => {
   try {
     await Tour.create(tours);
+    await User.create(users, { vaildateBeforeSave: false });
+    await Review.create(reviews);
     console.log('✅ Data successfully loaded!');
   } catch (err) {
     console.error('❌ Error loading data:', err);
@@ -52,6 +58,8 @@ const importData = async () => {
 const deleteData = async () => {
   try {
     await Tour.deleteMany();
+    await User.deleteMany();
+    await Review.deleteMany();
     console.log('🧻 Data successfully deleted!');
   } catch (err) {
     console.error('❌ Error deleting data:', err);
@@ -60,6 +68,7 @@ const deleteData = async () => {
 };
 
 // Run the import or delete function based on command line argument
+// node ./dev-data/data/import-dev-data.js --delete
 if (process.argv[2] === '--import') {
   importData();
 } else if (process.argv[2] === '--delete') {

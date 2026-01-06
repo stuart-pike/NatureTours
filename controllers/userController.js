@@ -1,6 +1,7 @@
 const User = require('../models/userModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
+const factory = require('./handlerFactory');
 
 // create an array of all the aguments passed in
 const filterObj = (obj, ...allowedFields) => {
@@ -11,16 +12,11 @@ const filterObj = (obj, ...allowedFields) => {
   return newObj;
 };
 
-exports.getAllUsers = catchAsync(async (req, res, next) => {
-  const users = await User.find();
-  res.status(200).json({
-    status: 'success',
-    results: users.length,
-    data: {
-      users,
-    },
-  });
-});
+// for the currently logged in user
+exports.getMe = (req, res, next) => {
+  req.params.id = req.user.id;
+  next();
+};
 
 // seperate path to update user info
 exports.updateMe = catchAsync(async (req, res, next) => {
@@ -35,7 +31,7 @@ exports.updateMe = catchAsync(async (req, res, next) => {
   }
 
   // Do not want to update everything in the body, for example
-  // if user puts body.role: admin which is not allowed.
+  // if user puts body.role: admin, this is prevented.
   // The body will be filtered then passed to x.
   // more fields can be added later
   const filteredBody = filterObj(req.body, 'name', 'email');
@@ -64,29 +60,18 @@ exports.deleteMe = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.getUser = (req, res) => {
-  res.status(500).json({
-    status: 'error',
-    message: 'This route is not yet defined!',
-  });
-};
-
 exports.createUser = (req, res) => {
   res.status(500).json({
     status: 'error',
-    message: 'This route is not yet defined!',
+    message: 'This route is not yet defined! Please use /signup instead',
   });
 };
 
-exports.updateUser = (req, res) => {
-  res.status(500).json({
-    status: 'error',
-    message: 'This route is not yet defined!',
-  });
-};
-exports.deleteUser = (req, res) => {
-  res.status(500).json({
-    status: 'error',
-    message: 'This route is not yet defined!',
-  });
-};
+exports.getUser = factory.getOne(User);
+
+exports.getAllUsers = factory.getAll(User);
+
+// for Admins. do not update passwords with this
+exports.updateUser = factory.updateOne(User);
+
+exports.deleteUser = factory.deleteOne(User);
