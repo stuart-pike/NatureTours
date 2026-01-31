@@ -2,9 +2,6 @@ extends base
 include _reviewCard
 
 block append head
-  //- script(src='https://api.mapbox.com/mapbox-gl-js/v0.54.0/mapbox-gl.js')
-  //- link(href='https://api.mapbox.com/mapbox-gl-js/v0.54.0/mapbox-gl.css' rel='stylesheet')
-  //- script(src='/js/mapbox.js')
   link(rel='stylesheet' href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css' integrity='sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=' crossorigin='')
   script(src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js' integrity='sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=' crossorigin='')
 
@@ -70,10 +67,9 @@ block content
         img.picture-box__img(src=`/img/tours/${img}`, alt=`${tour.name} ${i+1}`, class=`picture-box__image--${i+1}`)
 
   section.section-map
-    //- spec a data attribute that can be easily read by mapbox.js
+    //- spec a data attribute that can be easily read by leaflet.js
     #map(
       data-locations= `${JSON.stringify(tour.locations)}`
-      data-stadiaKey= process.env.STADIA_API_KEY
       )
 
   section.section-reviews

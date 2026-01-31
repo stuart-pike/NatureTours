@@ -53,6 +53,17 @@ const connectSrcUrls = [
 
 const fontSrcUrls = ['fonts.googleapis.com', 'fonts.gstatic.com'];
 
+// 👇 DEV ONLY
+if (process.env.NODE_ENV === 'development') {
+  connectSrcUrls.push(
+    'ws://localhost:1234',
+    'ws://127.0.0.1:1234',
+    'http://localhost:1234',
+    'http://127.0.0.1:1234',
+  );
+  scriptSrcUrls.push("'unsafe-eval'");
+}
+
 app.use(
   helmet.contentSecurityPolicy({
     directives: {
@@ -90,7 +101,7 @@ app.use('/api', limiter);
 
 // body parser, reading data from the body in to req.body
 app.use(express.json({ limit: '10Kb' }));
-
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 // parse the data from the cookie
 app.use(cookieParser());
 

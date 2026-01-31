@@ -6,6 +6,9 @@
     "plugin:prettier/recommended",
     "plugin:node/recommended"
   ],
+  "parserOptions": {
+    "sourceType": "module"
+  },
   "plugins": ["prettier"],
   "rules": {
     "prettier/prettier": ["error", { "endOfLine": "auto" }],

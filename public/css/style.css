@@ -375,7 +375,7 @@ body {
   position: absolute;
   top: 50%;
   left: 50%;
-  height: 115%; /* slightly taller for movement */
+  height: 115%;
   width: 100%;
   object-fit: cover;
   transform: translate(-50%, -50%);

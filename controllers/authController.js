@@ -82,6 +82,15 @@ exports.login = catchAsync(async (req, res, next) => {
   user.password = undefined;
 });
 
+exports.logout = (req, res) => {
+  res.cookie('jwt', '', {
+    expires: new Date(0),
+    httpOnly: true,
+  });
+
+  res.status(200).json({ status: 'success' });
+};
+
 // middleware to protect routes - only allow access if user is logged in
 exports.protect = catchAsync(async (req, res, next) => {
   // 1) Getting token and check if it's there
@@ -134,12 +143,14 @@ exports.protect = catchAsync(async (req, res, next) => {
   // GRANT ACCESS TO PROTECTED ROUTE
   // req.user travels to the next middleware making the user data available there.
   req.user = currentUser;
+  res.locals.user = currentUser;
   next();
 });
 
 // Only for rendered pages, no error
-exports.isLoggedIn = catchAsync(async (req, res, next) => {
-  if (req.cookies.jwt) {
+exports.isLoggedIn = async (req, res, next) => {
+  if (!req.cookies.jwt) return next();
+  try {
     // 1) verify the token
     const decoded = await promisify(jwt.verify)(
       req.cookies.jwt,
@@ -161,9 +172,10 @@ exports.isLoggedIn = catchAsync(async (req, res, next) => {
     // make user accessible to pug templates
     res.locals.user = currentUser;
     return next();
+  } catch (err) {
+    return next();
   }
-  next();
-});
+};
 
 // only allow access to certain roles
 exports.restrictTo = (...roles) => {

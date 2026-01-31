@@ -40,39 +40,69 @@ const handleJWTError = () =>
 const handleJWTExpiredError = () =>
   new AppError('Your token has expired! Please log in again.', 401);
 
-/**
- * Send detailed error in development:
- * Includes full error object + stack trace for debugging.
- */
-const sendErrorDev = (err, res) => {
-  res.status(err.statusCode).json({
-    status: err.status,
-    error: err, // Full error object
-    message: err.message,
-    stack: err.stack, // Stack trace for debugging
-  });
-};
+/*
+Two functions that send errors back to client
+one for development one for production
+Both functions distinguish between
+- Operational (trusted) errors that get sent to the client (err.message)
+- Unknown or programming errors send a generic message without the detail
+*/
 
-/**
- * Send filtered error in production:
- * - Only sends operational (trusted) errors to the client
- * - Unknown or programming errors send a generic message
- */
-const sendErrorProd = (err, res) => {
-  // A trusted operational error → safe to send details
-  if (err.isOperational) {
+const sendErrorDev = (err, req, res) => {
+  // A) API
+  if (req.originalUrl.startsWith('/api')) {
     return res.status(err.statusCode).json({
       status: err.status,
+      error: err,
       message: err.message,
+      stack: err.stack,
     });
   }
 
-  // Programming or unknown error → log it, but hide details from client
-  console.error('💥 UNKOWN ERROR 💥', err);
+  // B) RENDERED WEBSITE
+  console.error('ERROR 💥', err);
+  return res.status(err.statusCode).render('error', {
+    title: 'Something went wrong!',
+    msg: err.message,
+  });
+};
 
-  return res.status(500).json({
-    status: 'error',
-    message: 'Something went very wrong!', // Generic message
+const sendErrorProd = (err, req, res) => {
+  // A) API
+  if (req.originalUrl.startsWith('/api')) {
+    // A) Operational, trusted error: send message to client
+    if (err.isOperational) {
+      return res.status(err.statusCode).json({
+        status: err.status,
+        message: err.message,
+      });
+    }
+    // B) Programming or other unknown error: don't leak error details
+    // 1) Log error
+    console.error('ERROR 💥', err);
+    // 2) Send generic message
+    return res.status(500).json({
+      status: 'error',
+      message: 'Something went very wrong!',
+    });
+  }
+
+  // B) RENDERED WEBSITE
+  // A) Operational, trusted error: send message to client
+  if (err.isOperational) {
+    console.log(err);
+    return res.status(err.statusCode).render('error', {
+      title: 'Something went wrong!',
+      msg: err.message,
+    });
+  }
+  // B) Programming or other unknown error: don't leak error details
+  // 1) Log error
+  console.error('ERROR 💥', err);
+  // 2) Send generic message
+  return res.status(err.statusCode).render('error', {
+    title: 'Something went wrong!',
+    msg: 'Please try again later.',
   });
 };
 
@@ -90,7 +120,7 @@ module.exports = (err, req, res, next) => {
    * - Send full error details for debugging
    */
   if (process.env.NODE_ENV === 'development') {
-    return sendErrorDev(err, res);
+    return sendErrorDev(err, req, res);
   }
 
   /**
@@ -111,6 +141,6 @@ module.exports = (err, req, res, next) => {
     if (error.name === 'JsonWebTokenError') error = handleJWTError();
     if (error.name === 'TokenExpiredError') error = handleJWTExpiredError();
 
-    return sendErrorProd(error, res);
+    return sendErrorProd(error, req, res);
   }
 };

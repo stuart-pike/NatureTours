@@ -1,6 +1,7 @@
 // JS just for background parallax effect
 (() => {
   if (matchMedia('(pointer: coarse)').matches) return;
+  if (!matchMedia('(hover: hover)').matches) return;
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
   document.querySelectorAll('.header__hero').forEach((el) => {
@@ -16,7 +17,8 @@
 
     function tick() {
       currentY = lerp(currentY, targetY, 0.12);
-      img.style.transform = `translate(-50%, calc(-50% + ${currentY}px))`;
+      img.style.transform = `translateY(${currentY}px)`;
+      // img.style.transform = `translate(-50%, calc(-50% + ${currentY}px))`;
 
       if (Math.abs(targetY - currentY) > 0.1) {
         rafId = requestAnimationFrame(tick);

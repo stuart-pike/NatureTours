@@ -1,10 +1,6 @@
 /* eslint-disable */
-(() => {
-  const mapBox = document.getElementById('map');
-  if (!mapBox || !window.L) return;
 
-  const locations = JSON.parse(mapBox.dataset.locations);
-
+export const displayMap = (locations) => {
   const map = L.map('map', {
     scrollWheelZoom: false,
     dragging: false,
@@ -55,4 +51,4 @@
       });
     });
   }
-})();
+};
